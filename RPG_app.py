@@ -2,9 +2,9 @@ import streamlit as st
 import pandas as pd
 import random
 
-st.set_page_config(page_title="Controle de combate - D&D 5e", layout="wide")
+st.set_page_config(page_title="Iniciativa D&D 5e", layout="wide")
 
-st.title("🎲 Controle de combate - D&D 5e")
+st.title("🎲 Iniciativa D&D 5e")
 
 # =========================
 # SIDEBAR COMPACTA
@@ -38,9 +38,10 @@ def rolar_d20():
     return random.randint(1, 20)
 
 # =========================
-# MODELO
+# DOWNLOAD MODELO (OPCIONAL)
 # =========================
-st.link_button("📥 Baixar modelo de Excel", "https://docs.google.com/spreadsheets/d/1tSZyBhHuPhA_PkgKPPBdXlbrqEkiAAd7/edit?usp=sharing&ouid=100882495660344764500&rtpof=true&sd=true")
+st.markdown("### 📥 Baixe o modelo de planilha")
+st.markdown("[👉 Download do modelo](SEU_LINK_AQUI)")
 
 # =========================
 # UPLOAD
@@ -49,13 +50,24 @@ uploaded_file = st.file_uploader("Envie o Excel", type=["xlsx"])
 
 if uploaded_file:
     try:
-        df_personagens = pd.read_excel(uploaded_file, sheet_name="Personagens")
-        df_inimigos = pd.read_excel(uploaded_file, sheet_name="Inimigos")
-    except:
-        st.error("❌ Arquivo inválido")
+        excel = pd.ExcelFile(uploaded_file)
+
+        st.write("Abas encontradas:", excel.sheet_names)  # debug útil
+
+        df_personagens = pd.read_excel(excel, sheet_name="Personagens")
+        df_inimigos = pd.read_excel(excel, sheet_name="Inimigos")
+
+        # limpar nomes de colunas
+        df_personagens.columns = df_personagens.columns.str.strip()
+        df_inimigos.columns = df_inimigos.columns.str.strip()
+
+    except Exception as e:
+        st.error(f"❌ Erro ao ler arquivo: {e}")
         st.stop()
 
+    # =========================
     # TABELAS
+    # =========================
     st.subheader("📋 Personagens")
     st.dataframe(df_personagens, use_container_width=True)
 
@@ -99,7 +111,7 @@ if uploaded_file:
                 "Nome": row["Nome"],
                 "Tipo": "Jogador",
                 "D20": d20,
-                "Iniciativa": mod,
+                "Mod": mod,
                 "DEX": dex,
                 "Total": d20 + mod,
                 "HP": row.get("HP", 0),
@@ -116,7 +128,7 @@ if uploaded_file:
                 "Nome": row["Nome"],
                 "Tipo": "Inimigo",
                 "D20": d20,
-                "Iniciativa": mod,
+                "Mod": mod,
                 "DEX": dex,
                 "Total": d20 + mod,
                 "HP": row.get("HP", 0),
@@ -140,17 +152,16 @@ if uploaded_file:
                 "CA": inimigo["CA"]
             })
 
-        # ORDENAÇÃO COM DESEMPATE POR DEX
+        # ordenar com desempate por DEX
         df_final = pd.DataFrame(resultados)\
             .sort_values(by=["Total", "DEX"], ascending=[False, False])\
             .reset_index(drop=True)
-        
-        # remover DEX só da visualização
+
+        # remover DEX da visualização
         df_exibir = df_final.drop(columns=["DEX"])
 
-        # MOSTRAR RESULTADO CORRETAMENTE (corrigido)
         st.subheader("🎲 Resultados de Iniciativa")
-        st.dataframe(df_final, use_container_width=True)
+        st.dataframe(df_exibir, use_container_width=True)
 
         # salvar estado
         st.session_state["combate"] = df_final
@@ -158,7 +169,7 @@ if uploaded_file:
         st.session_state["hp_editavel"] = df_final["HP"].fillna(0).tolist()
 
 # =========================
-# COMBATE (SEM ALTERAÇÕES)
+# COMBATE
 # =========================
 if "combate" in st.session_state:
 
@@ -228,11 +239,10 @@ if "combate" in st.session_state:
                     height:100%;
                     background-color:{cor};
                     padding:1px;
-                    align-items:center;
                     border-radius:10px;
                     text-align:center;
                     margin-bottom:10px;
-                    padding-top: 10px;
+                    padding-top:10px;
                 ">
                     <h5>{emoji} {row['Nome']}</h5>
                     <p>{conteudo}</p>
