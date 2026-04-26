@@ -38,10 +38,10 @@ def rolar_d20():
     return random.randint(1, 20)
 
 # =========================
-# DOWNLOAD MODELO (OPCIONAL)
+# MODELO
 # =========================
-st.markdown("### 📥 Baixe o modelo de planilha")
-st.markdown("[👉 Download do modelo](SEU_LINK_AQUI)")
+st.link_button("📥 Baixar modelo de Excel", "https://docs.google.com/spreadsheets/d/1tSZyBhHuPhA_PkgKPPBdXlbrqEkiAAd7/edit?usp=sharing&ouid=100882495660344764500&rtpof=true&sd=true")
+
 
 # =========================
 # UPLOAD
