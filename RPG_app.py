@@ -23,21 +23,12 @@ with st.sidebar:
     cor_inimigo_turno = st.color_picker("Turno", "#7D241A", key="ci2")
 
 # =========================
-# CSS GLOBAL
+# CSS
 # =========================
 st.markdown(f"""
 <style>
 .stApp {{
     background-color: {cor_fundo};
-}}
-
-.card {{
-    padding: 10px;
-    border-radius: 12px;
-    margin-bottom: 10px;
-    text-align: center;
-    color: white;
-    font-weight: bold;
 }}
 </style>
 """, unsafe_allow_html=True)
@@ -53,7 +44,6 @@ def remover_se_morto(index):
     hp_lista = st.session_state["hp_editavel"]
 
     if df.loc[index, "Tipo"] == "Inimigo" and hp_lista[index] <= 0:
-
         nome = df.loc[index, "Nome"]
 
         df = df.drop(index).reset_index(drop=True)
@@ -100,9 +90,25 @@ if uploaded_file:
     st.subheader("👾 Inimigos")
     st.dataframe(df_inimigos, use_container_width=True)
 
-    # =========================
-    # ROLAR INICIATIVA
-    # =========================
+    if "inimigos_extra" not in st.session_state:
+        st.session_state["inimigos_extra"] = []
+
+    with st.form("form_inimigo"):
+        nome = st.text_input("Nome inimigo")
+        ini = st.number_input("Iniciativa", step=1)
+        hp = st.number_input("HP", step=1)
+        ca = st.number_input("CA", step=1)
+        dex = st.number_input("DEX", step=1)
+
+        if st.form_submit_button("Adicionar") and nome:
+            st.session_state["inimigos_extra"].append({
+                "Nome": nome,
+                "Iniciativa": ini,
+                "HP": hp,
+                "CA": ca,
+                "DEX": dex
+            })
+
     if st.button("🎲 Rolar iniciativa"):
         resultados = []
 
@@ -111,8 +117,9 @@ if uploaded_file:
             resultados.append({
                 "Nome": row["Nome"],
                 "Tipo": "Jogador",
-                "DEX": row.get("DEX", 0),
                 "Total": d20 + row["Iniciativa"],
+                "DEX": row.get("DEX", 0),
+                "IniBase": row["Iniciativa"],
                 "HP": row.get("HP", 0),
                 "CA": row.get("CA", 0)
             })
@@ -122,18 +129,31 @@ if uploaded_file:
             resultados.append({
                 "Nome": row["Nome"],
                 "Tipo": "Inimigo",
-                "DEX": row.get("DEX", 0),
                 "Total": d20 + row["Iniciativa"],
+                "DEX": row.get("DEX", 0),
+                "IniBase": row["Iniciativa"],
                 "HP": row.get("HP", 0),
                 "CA": row.get("CA", 0)
             })
 
+        for inimigo in st.session_state["inimigos_extra"]:
+            d20 = rolar_d20()
+            resultados.append({
+                "Nome": inimigo["Nome"],
+                "Tipo": "Inimigo",
+                "Total": d20 + inimigo["Iniciativa"],
+                "DEX": inimigo["DEX"],
+                "IniBase": inimigo["Iniciativa"],
+                "HP": inimigo["HP"],
+                "CA": inimigo["CA"]
+            })
+
         df_final = pd.DataFrame(resultados)\
-            .sort_values(by=["Total", "DEX"], ascending=[False, False])\
+            .sort_values(by=["Total", "DEX", "IniBase"], ascending=[False, False, False])\
             .reset_index(drop=True)
 
         st.subheader("🎲 Resultados de Iniciativa")
-        st.dataframe(df_final.drop(columns=["DEX"]), use_container_width=True)
+        st.dataframe(df_final.drop(columns=["DEX", "IniBase"]), use_container_width=True)
 
         st.session_state["combate"] = df_final
         st.session_state["turno"] = 0
@@ -155,9 +175,6 @@ if "combate" in st.session_state:
     hp_atual = st.session_state["hp_editavel"][turno_idx]
     hp_max = row["HP"] if row["HP"] else 1
 
-    # =========================
-    # LINHA TURNO
-    # =========================
     col1, col2, col3 = st.columns([1,3,1])
 
     with col1:
@@ -171,7 +188,7 @@ if "combate" in st.session_state:
             st.rerun()
 
     with col2:
-        st.markdown(f"<h3 style='text-align:center;'>🎯 {row['Nome']}</h3>", unsafe_allow_html=True)
+        st.markdown(f"<h3 style='text-align:center;'> {row['Nome']}</h3>", unsafe_allow_html=True)
 
     with col3:
         if st.button("▶", key="next_turn"):
@@ -183,7 +200,7 @@ if "combate" in st.session_state:
             st.rerun()
 
     # =========================
-    # HP INIMIGO
+    # HP INIMIGOS
     # =========================
     if row["Tipo"] == "Inimigo":
 
@@ -203,36 +220,43 @@ if "combate" in st.session_state:
 
         with col_hp3:
             proporcao = hp_atual / hp_max if hp_max > 0 else 0
+            barra = min(proporcao, 1)
+            st.progress(barra)
 
-            # barra de vida
-            st.progress(proporcao)
-            
-            # cor dinâmica
-            if proporcao > 0.6:
+            proporcao_base = min(proporcao, 1)
+
+            if proporcao_base > 0.6:
                 cor_texto = "🟢"
-            elif proporcao > 0.3:
+            elif proporcao_base > 0.3:
                 cor_texto = "🟡"
             else:
                 cor_texto = "🔴"
 
-            st.markdown(
-                f"<div style='text-align:center;'>{cor_texto} {hp_atual}/{hp_max}</div>",
-                unsafe_allow_html=True
-            )
-                
+            excesso = hp_atual - hp_max
+
+            if excesso > 0:
+                st.markdown(f"""
+                <div style='text-align:center;'>
+                    {cor_texto} {hp_atual}/{hp_max}<br>
+                    <span style='color:#4FC3F7;'>🔵 +{excesso}</span>
+                </div>
+                """, unsafe_allow_html=True)
+            else:
+                st.markdown(f"<div style='text-align:center;'>{cor_texto} {hp_atual}/{hp_max}</div>", unsafe_allow_html=True)
+
         with col_hp4:
             if st.button("+5", key="hp_plus5"):
                 st.session_state["hp_editavel"][turno_idx] = max(0, hp_atual + 5)
                 remover_se_morto(turno_idx)
                 st.rerun()
-                
+
         with col_hp5:
             if st.button("➕", key="hp_plus"):
                 st.session_state["hp_editavel"][turno_idx] += 1
                 st.rerun()
 
     st.markdown("---")
-
+    
     # =========================
     # GRID COMBATE
     # =========================
