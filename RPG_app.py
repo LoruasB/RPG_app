@@ -168,6 +168,23 @@ if uploaded_file:
         st.session_state["turno"] = 0
         st.session_state["hp_editavel"] = df_final["HP"].fillna(0).tolist()
 
+def remover_se_morto(index):
+    df = st.session_state["combate"]
+    hp_lista = st.session_state["hp_editavel"]
+
+    # só remove inimigos
+    if df.loc[index, "Tipo"] == "Inimigo" and hp_lista[index] <= 0:
+        # remover da lista
+        df = df.drop(index).reset_index(drop=True)
+        hp_lista.pop(index)
+
+        # ajustar turno
+        if st.session_state["turno"] >= len(df):
+            st.session_state["turno"] = 0
+
+        st.session_state["combate"] = df
+        st.session_state["hp_editavel"] = hp_lista
+
 # =========================
 # COMBATE
 # =========================
@@ -194,6 +211,7 @@ if "combate" in st.session_state:
         with col1:
             if st.button("➖ HP"):
                 st.session_state["hp_editavel"][turno_idx] = max(0, hp_atual - 1)
+                remover_se_morto(turno_idx)
                 st.rerun()
 
         with col2:
