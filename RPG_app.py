@@ -366,11 +366,29 @@ if "combate" in st.session_state:
                 if row["Tipo"] == "Jogador":
                     classe = "card-jogador-turno" if i == turno_idx else "card-jogador"
                     emoji = "🤙"
-                    conteudo = f"🛡️ {row['CA']}"
+                    # STATUS DE CAÍDO
+                    if hp <= 0:
+                        status = "💀 Caído"
+                    else:
+                        status = ""
+                    hp_max = row["HP"] if row["HP"] else 0
+
+                    if hp > hp_max:
+                        coracao = "💙"
+                    else:
+                        coracao = "❤️"
+
+                    conteudo = f"🛡️ {row['CA']} | {coracao} {hp} {status}"
+                                           
                 else:
                     classe = "card-inimigo-turno" if i == turno_idx else "card-inimigo"
                     emoji = "👾"
-                    conteudo = f"🛡️ {row['CA']} | ❤️ {hp}"
+                    hp_max = row["HP"] if row["HP"] else 0
+
+                    if hp > hp_max:
+                        conteudo = f"🛡️ {row['CA']} | 💙 {hp}"
+                    else:
+                        conteudo = f"🛡️ {row['CA']} | ❤️ {hp}"
 
                 st.markdown(f"""
                 <div class="card {classe}">
@@ -378,6 +396,29 @@ if "combate" in st.session_state:
                     <div>{conteudo}</div>
                 </div>
                 """, unsafe_allow_html=True)
+                
+                # =========================
+                # CONTROLE DE HP INDIVIDUAL
+                # =========================
+ 
+                col_hp_a, col_hp_b, col_hp_c = st.columns([1,1,1])
+
+                with col_hp_a:
+                    if st.button("➖", key=f"hp_minus_{i}"):
+                        st.session_state["hp_editavel"][i] = hp - 1
+                        remover_se_morto(i)
+                        st.rerun()
+
+                with col_hp_b:
+                    if st.button("-5", key=f"hp_minus5_{i}"):
+                        st.session_state["hp_editavel"][i] = hp - 5
+                        remover_se_morto(i)
+                        st.rerun()
+
+                with col_hp_c:
+                    if st.button("➕", key=f"hp_plus_{i}"):
+                        st.session_state["hp_editavel"][i] += 1
+                        st.rerun()
 
                 # botão engrenagem
                 st.markdown("<div style='text-align:center'>", unsafe_allow_html=True)
