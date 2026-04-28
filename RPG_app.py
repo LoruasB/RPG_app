@@ -140,6 +140,15 @@ def remover_se_morto(index):
         st.warning(f"💀 {nome} foi derrotado!")
 
 # =========================
+# MODELO
+# =========================
+st.markdown("### 📥 Modelo de planilha")
+
+st.markdown(
+    "[📄 Baixar modelo de Excel](https://docs.google.com/spreadsheets/d/1tSZyBhHuPhA_PkgKPPBdXlbrqEkiAAd7/edit?usp=drive_link&ouid=100882495660344764500&rtpof=true&sd=true)"
+)
+
+# =========================
 # UPLOAD
 # =========================
 uploaded_file = st.file_uploader("Envie o Excel", type=["xlsx"])
