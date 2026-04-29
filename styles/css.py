@@ -40,5 +40,35 @@ def aplicar_css(cor_fundo, cor_jogador, cor_jogador_turno, cor_inimigo, cor_inim
         padding: 6px 10px;
     }}
 
+    button[key^="up_"], button[key^="down_"] {{
+        font-size: 10px;
+        padding: 2px 4px;
+    }}
+
+    .card {{
+        position: relative;
+    }}
+
+    .card-botoes {{
+        position: absolute;
+        top: 6px;
+        left: 6px;
+        display: flex;
+        gap: 4px;
+    }}
+
+    .card-botoes button {{
+        background: transparent;
+        border: none;
+        box-shadow: none;
+        font-size: 12px;
+        padding: 2px;
+        cursor: pointer;
+    }}
+
+    .card-botoes button:hover {{
+        transform: scale(1.2);
+    }}
+
     </style>
     """, unsafe_allow_html=True)
