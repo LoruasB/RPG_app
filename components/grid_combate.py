@@ -1,5 +1,6 @@
 import streamlit as st
 from logic.hp import remover_se_morto
+from logic.ordem import mover_posicao
 from data.condicoes import CONDICOES
 
 def render_grid(df):
@@ -26,12 +27,11 @@ def render_grid(df):
                     st.session_state[f"mostrar_{i}"] = False
 
                 # =========================
-                # CARD
+                # DEFINIÇÃO CARD
                 # =========================
                 if row["Tipo"] == "Jogador":
                     classe = "card-jogador-turno" if i == turno_idx else "card-jogador"
                     emoji = "🤙"
-
                     status = "💀 Caído" if hp <= 0 else ""
 
                     hp_max = row["HP"] if row["HP"] else 0
@@ -50,9 +50,29 @@ def render_grid(df):
                     else:
                         conteudo = f"🛡️ {row['CA']} | ❤️ {hp}"
 
+                # =========================
+                # BOTÕES SOBRE O CARD
+                # =========================
+                col_overlay = st.columns([1,1,8])
+
+                with col_overlay[0]:
+                    if st.button("⬆️", key=f"up_{i}"):
+                        mover_posicao(i, -1)
+                        st.rerun()
+
+                with col_overlay[1]:
+                    if st.button("⬇️", key=f"down_{i}"):
+                        mover_posicao(i, 1)
+                        st.rerun()
+
+                # =========================
+                # CARD
+                # =========================
                 st.markdown(f"""
                 <div class="card {classe}">
-                    <div>{emoji} {row['Nome']}</div>
+                    <div style="padding-top: 6px;">
+                        {emoji} {row['Nome']}
+                    </div>
                     <div>{conteudo}</div>
                 </div>
                 """, unsafe_allow_html=True)
