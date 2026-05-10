@@ -22,35 +22,60 @@ def render_upload():
         st.stop()
 
     # =========================
-    # EXIBIÇÃO
+    # CONTROLES DE EXIBIÇÃO
     # =========================
-    st.subheader("📋 Personagens")
-    st.dataframe(df_personagens, use_container_width=True)
+    if "show_personagens" not in st.session_state:
+        st.session_state["show_personagens"] = False
+    if "show_inimigos" not in st.session_state:
+        st.session_state["show_inimigos"] = False
+    if "show_adicionar_inimigo" not in st.session_state:
+        st.session_state["show_adicionar_inimigo"] = False
+    if "inimigos_extra" not in st.session_state:
+        st.session_state["inimigos_extra"] = []
 
-    st.subheader("👾 Inimigos")
-    st.dataframe(df_inimigos, use_container_width=True)
+    col1, col2, col3 = st.columns(3)
+    if col1.button("Ver Personagens", key="btn_ver_personagens"):
+        st.session_state["show_personagens"] = not st.session_state["show_personagens"]
+    if col2.button("Ver Inimigos", key="btn_ver_inimigos"):
+        st.session_state["show_inimigos"] = not st.session_state["show_inimigos"]
+    if col3.button("Add Inimigo", key="btn_add_inimigo"):
+        st.session_state["show_adicionar_inimigo"] = not st.session_state["show_adicionar_inimigo"]
+
+    if st.session_state["show_personagens"]:
+        st.subheader("📋 Personagens")
+        st.dataframe(df_personagens, use_container_width=True)
+
+    if st.session_state["show_inimigos"]:
+        st.subheader("👾 Inimigos")
+        st.dataframe(df_inimigos, use_container_width=True)
 
     # =========================
     # INIMIGOS EXTRA
     # =========================
-    if "inimigos_extra" not in st.session_state:
-        st.session_state["inimigos_extra"] = []
+    if st.session_state["show_adicionar_inimigo"]:
+        st.subheader("➕ Adicionar inimigo extra")
+        with st.form("form_inimigo"):
+            nome = st.text_input("Nome inimigo")
+            ini = st.number_input("Iniciativa", step=1)
+            hp = st.number_input("HP", step=1)
+            ca = st.number_input("CA", step=1)
+            dex = st.number_input("DEX", step=1)
 
-    with st.form("form_inimigo"):
-        nome = st.text_input("Nome inimigo")
-        ini = st.number_input("Iniciativa", step=1)
-        hp = st.number_input("HP", step=1)
-        ca = st.number_input("CA", step=1)
-        dex = st.number_input("DEX", step=1)
+            if st.form_submit_button("Adicionar") and nome:
+                st.session_state["inimigos_extra"].append({
+                    "Nome": nome,
+                    "Iniciativa": ini,
+                    "HP": hp,
+                    "CA": ca,
+                    "DEX": dex
+                })
 
-        if st.form_submit_button("Adicionar") and nome:
-            st.session_state["inimigos_extra"].append({
-                "Nome": nome,
-                "Iniciativa": ini,
-                "HP": hp,
-                "CA": ca,
-                "DEX": dex
-            })
+        if st.session_state["inimigos_extra"]:
+            st.subheader("🧟 Inimigos extras adicionados")
+            st.dataframe(
+                pd.DataFrame(st.session_state["inimigos_extra"]),
+                use_container_width=True
+            )
 
     # =========================
     # ROLAR INICIATIVA

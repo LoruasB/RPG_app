@@ -3,7 +3,19 @@ import streamlit as st
 def aplicar_css(cor_fundo, cor_jogador, cor_jogador_turno, cor_inimigo, cor_inimigo_turno):
     st.markdown(f"""
     <style>
-    .stApp {{ background-color: {cor_fundo}; }}
+    .stApp {{ 
+        background-color: {cor_fundo};
+    }}
+
+    [data-testid="stAppViewContainer"] {{
+        background-color: {cor_fundo};
+    }}
+
+    [data-testid="stMainBlockContainer"] {{
+        max-width: 1200px;
+        margin: 0 auto;
+        padding: 3rem 20px 0 20px;
+    }}
 
     .card {{
         padding: 10px;
