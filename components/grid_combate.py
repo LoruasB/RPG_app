@@ -1,127 +1,84 @@
 import streamlit as st
 from logic.hp import remover_se_morto
-from logic.ordem import mover_posicao
 from data.condicoes import CONDICOES
 
 def render_grid(df):
     turno_idx = st.session_state["turno"]
 
     st.markdown("## ⚔️ Combate")
+    
+    st.markdown("""
+    <style>
+        [data-testid="stVerticalBlock"] {
+            gap: 0.5rem;
+        }
+    </style>
+    """, unsafe_allow_html=True)
 
-    num_colunas = 4
-    linhas = [df[i:i+num_colunas] for i in range(0, len(df), num_colunas)]
+    header_cols = st.columns([3, 2, 4])
+    header_cols[0].markdown("**Personagem**")
+    header_cols[1].markdown("**Dano/Cura sofrida**")
+    header_cols[2].markdown("**Condições**")
 
-    for linha in linhas:
-        cols = st.columns(num_colunas)
+    for i, row in df.iterrows():
+        hp = st.session_state["hp_editavel"][i]
 
-        for idx_col, (_, row) in enumerate(linha.iterrows()):
-            i = row.name
-            hp = st.session_state["hp_editavel"][i]
+        if f"mostrar_condicoes_{i}" not in st.session_state:
+            st.session_state[f"mostrar_condicoes_{i}"] = False
+        if f"dano_cura_{i}" not in st.session_state:
+            st.session_state[f"dano_cura_{i}"] = 0
 
-            with cols[idx_col]:
+        cols = st.columns([3, 2, 4])
 
-                # =========================
-                # CONTROLE DE VISIBILIDADE
-                # =========================
-                if f"mostrar_{i}" not in st.session_state:
-                    st.session_state[f"mostrar_{i}"] = False
+        with cols[0]:
+            tipo = row.get("Tipo", "")
+            hp_max = row.get("HP", 0) or 0
+            status = "💀 Caído" if hp <= 0 else ""
+            coracao = "💙" if hp > hp_max else "❤️"
 
-                # =========================
-                # DEFINIÇÃO CARD
-                # =========================
-                if row["Tipo"] == "Jogador":
-                    classe = "card-jogador-turno" if i == turno_idx else "card-jogador"
-                    emoji = "🤙"
-                    status = "💀 Caído" if hp <= 0 else ""
+            st.markdown(f"""
+            <div class="card {'card-jogador' if tipo == 'Jogador' else 'card-inimigo'}">
+                <div style="padding: 8px 0; font-weight: 700; font-size: 18px;">{row['Nome']}</div>
+                <div>Tipo: {tipo}</div>
+                <div>CA: {row.get('CA', '-')}</div>
+                <div>HP: {hp}/{hp_max} {status}</div>
+            </div>
+            """, unsafe_allow_html=True)
 
-                    hp_max = row["HP"] if row["HP"] else 0
-                    coracao = "💙" if hp > hp_max else "❤️"
+        with cols[1]:
+            st.number_input(
+                "Valor",
+                value=st.session_state[f"dano_cura_{i}"],
+                step=1,
+                key=f"dano_cura_{i}"
+            )
+            if st.button("Aplicar", key=f"aplicar_dano_{i}"):
+                delta = st.session_state[f"dano_cura_{i}"]
+                novo_hp = max(0, hp + delta)
+                st.session_state["hp_editavel"][i] = novo_hp
+                if novo_hp == 0:
+                    remover_se_morto(i)
+                st.rerun()
 
-                    conteudo = f"🛡️ {row['CA']} | {coracao} {hp} {status}"
+        with cols[2]:
+            if st.button("Add condição", key=f"btn_add_cond_{i}"):
+                st.session_state[f"mostrar_condicoes_{i}"] = not st.session_state[f"mostrar_condicoes_{i}"]
 
-                else:
-                    classe = "card-inimigo-turno" if i == turno_idx else "card-inimigo"
-                    emoji = "👾"
+            if st.session_state[f"mostrar_condicoes_{i}"]:
+                st.session_state["condicoes"][i] = st.multiselect(
+                    "Condições",
+                    list(CONDICOES.keys()),
+                    default=st.session_state["condicoes"][i],
+                    key=f"multi_cond_{i}"
+                )
 
-                    hp_max = row["HP"] if row["HP"] else 0
+            if st.session_state["condicoes"][i]:
+                cond_text = " ".join([
+                    f"{CONDICOES[c]} {c}"
+                    for c in st.session_state["condicoes"][i]
+                ])
+                st.markdown(cond_text)
+            else:
+                st.write("Sem condições")
 
-                    if hp > hp_max:
-                        conteudo = f"🛡️ {row['CA']} | 💙 {hp}"
-                    else:
-                        conteudo = f"🛡️ {row['CA']} | ❤️ {hp}"
-
-                # =========================
-                # BOTÕES SOBRE O CARD
-                # =========================
-                col_overlay = st.columns([1,1,8])
-
-                with col_overlay[0]:
-                    if st.button("⬆️", key=f"up_{i}"):
-                        mover_posicao(i, -1)
-                        st.rerun()
-
-                with col_overlay[1]:
-                    if st.button("⬇️", key=f"down_{i}"):
-                        mover_posicao(i, 1)
-                        st.rerun()
-
-                # =========================
-                # CARD
-                # =========================
-                st.markdown(f"""
-                <div class="card {classe}">
-                    <div style="padding-top: 6px;">
-                        {emoji} {row['Nome']}
-                    </div>
-                    <div>{conteudo}</div>
-                </div>
-                """, unsafe_allow_html=True)
-
-                # =========================
-                # CONTROLE DE HP
-                # =========================
-                col_hp_a, col_hp_b, col_hp_c = st.columns([1,1,1])
-
-                with col_hp_a:
-                    if st.button("➖", key=f"hp_minus_{i}"):
-                        st.session_state["hp_editavel"][i] = hp - 1
-                        remover_se_morto(i)
-                        st.rerun()
-
-                with col_hp_b:
-                    if st.button("-5", key=f"hp_minus5_{i}"):
-                        st.session_state["hp_editavel"][i] = hp - 5
-                        remover_se_morto(i)
-                        st.rerun()
-
-                with col_hp_c:
-                    if st.button("➕", key=f"hp_plus_{i}"):
-                        st.session_state["hp_editavel"][i] += 1
-                        st.rerun()
-
-                # =========================
-                # BOTÃO CONFIG
-                # =========================
-                st.markdown("<div style='text-align:center'>", unsafe_allow_html=True)
-
-                if st.button("⚙️", key=f"btn_{i}"):
-                    st.session_state[f"mostrar_{i}"] = not st.session_state[f"mostrar_{i}"]
-
-                st.markdown("</div>", unsafe_allow_html=True)
-
-                # =========================
-                # CONDIÇÕES
-                # =========================
-                if st.session_state[f"mostrar_{i}"]:
-                    st.session_state["condicoes"][i] = st.multiselect(
-                        "Condições",
-                        list(CONDICOES.keys()),
-                        default=st.session_state["condicoes"][i],
-                        key=f"multi_{i}"
-                    )
-
-                if st.session_state["condicoes"][i]:
-                    st.markdown(" ".join([
-                        f"{CONDICOES[c]}"
-                        for c in st.session_state["condicoes"][i]
-                    ]))
+        st.markdown("<hr style='margin: 16px;'>", unsafe_allow_html=True)
