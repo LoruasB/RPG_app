@@ -4,7 +4,7 @@ def render_sidebar():
     with st.sidebar:
         st.markdown("### 🎨 Cores")
 
-        cor_fundo = st.color_picker("", "#BCD5FF", label_visibility="collapsed")
+        cor_fundo = st.color_picker("", "#041946", label_visibility="collapsed")
 
         st.markdown("**Jogadores**")
         cor_jogador = st.color_picker("Normal", "#41A7F0", key="cj1")
